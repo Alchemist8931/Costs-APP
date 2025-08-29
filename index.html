@@ -38,7 +38,6 @@
       background-position: center;
       background-attachment: fixed;
     }
-    /* затемняющая вуаль над фоном */
     body::before{
       content:"";
       position:fixed; inset:0;
@@ -149,7 +148,6 @@
     }
     .tab.active{ color: var(--text); background: rgba(255,255,255,0.08); }
 
-    /* полоса с подсказкой свайпа */
     .swipe-hint{
       text-align:center; font-size: 12px; color: var(--muted);
       padding: 6px 0 10px 0;
@@ -227,15 +225,11 @@
       display:grid; grid-template-columns: 1fr 1fr; gap: 12px;
     }
     .form-actions{ display:flex; gap:10px; justify-content: flex-end; margin-top: 14px; }
-
-    /* ================== АВТОКОМПЛИТ (datalist вид) ================== */
     .hint{ font-size: 12px; color: var(--muted); margin-top: 6px; }
 
     /* ================== АДАПТИВ ================== */
     @media (max-width: 980px){
-      .row{
-        grid-template-columns: 52px 132px 1fr 1fr 132px 150px;
-      }
+      .row{ grid-template-columns: 52px 132px 1fr 1fr 132px 150px; }
     }
     @media (max-width: 760px){
       .row{
@@ -295,7 +289,6 @@
             <div class="row head">
               <div>№ п/п</div><div>Пользователь</div><div>Источник</div><div>Категория</div><div>Дата</div><div>Сумма</div>
             </div>
-            <!-- строки будут дорисованы скриптом -->
           </div>
         </section>
 
@@ -309,7 +302,6 @@
             <div class="row head">
               <div>№ п/п</div><div>Пользователь</div><div>Источник</div><div>Категория</div><div>Дата</div><div>Сумма</div>
             </div>
-            <!-- строки будут дорисованы скриптом -->
           </div>
         </section>
       </div>
@@ -355,9 +347,9 @@
 
   <script>
     // ================== ГРУППА КОНСТАНТ/НАСТРОЕК ==================
-    // //ключи и настройки интеграции Google API (замените на свои)
-    const API_KEY = "AIzaSyDlBMVh0M2KWw7Ky2QRCmyeFwyMRl92dKU";                       // //ключ API для Google Sheets
-    const CLIENT_ID = "559428676581-lu7uroo525nlc2k7gs0ekjbok9aj7qi0.apps.googleusercontent.com"; // //OAuth Client ID
+    // //ключи и настройки интеграции Google API (ЗАМЕНИТЕ НА СВОИ)
+    const API_KEY = "PASTE_YOUR_API_KEY_HERE"; // //ключ API для Google Sheets
+    const CLIENT_ID = "PASTE_YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com"; // //OAuth Client ID (Web)
     const SCOPES = "https://www.googleapis.com/auth/spreadsheets";   // //область доступа
     const DISCOVERY_DOC = "https://sheets.googleapis.com/$discovery/rest?version=v4"; // //документация
 
@@ -366,18 +358,13 @@
     // //имена листов (создайте 2 вкладки в таблице с такими названиями)
     const SHEET_EXP = "Expenses"; // //лист для расходов
     const SHEET_INC = "Incomes";  // //лист для доходов
-
     // //отображаемые колонки и их порядок в Google Sheets
-    // //["№","Пользователь","Источник","Категория","Дата","Сумма"]
     const HEADER = ["№","Пользователь","Источник","Категория","Дата","Сумма"];
 
     // //пользователи (по PIN)
-    const PIN_MAP = {
-      "8931": "Alchemist",
-      "2401": "Ardente Stella",
-    };
+    const PIN_MAP = { "8931": "Alchemist", "2401": "Ardente Stella" };
 
-    // //состояние приложения
+    // ================== СОСТОЯНИЕ ПРИЛОЖЕНИЯ ==================
     let currentUser = null;           // //текущий пользователь (строка)
     let currentPage = "exp";          // //exp|inc
     let tokenClient = null;           // //OAuth клиент
@@ -391,9 +378,10 @@
     let uniqueSourcesInc = new Set(); // //уникальные источники для доходов
     let uniqueCatsInc = new Set();    // //уникальные категории для доходов
     let createMode = "exp";           // //в каком листе создаём (exp/inc)
+    let tokenRefreshTimer = null;     // //таймер обновления access_token
 
     // ================== УТИЛИТЫ ==================
-    // //форматирование суммы "1 234 567"
+    // //функция форматирования суммы "1 234 567"
     function fmtAmount(num){
       try{
         const n = Number(num);
@@ -401,27 +389,24 @@
         return n.toLocaleString('ru-RU', {maximumFractionDigits:0});
       }catch(e){ return ""; }
     }
-
-    // //из форматированного ввода → число
+    // //функция: строка → целое число (удаление пробелов)
     function parseAmountInput(s){
       if(!s) return NaN;
       const digits = (s+"").replace(/[^\d]/g,"");
       return digits ? Number(digits) : NaN;
     }
-
-    // //сегодняшняя дата в формате yyyy-mm-dd
+    // //функция: сегодняшняя дата в формате yyyy-mm-dd
     function todayISO(){
       const d = new Date();
       const mm = String(d.getMonth()+1).padStart(2,"0");
       const dd = String(d.getDate()).padStart(2,"0");
       return `${d.getFullYear()}-${mm}-${dd}`;
     }
-
-    // //плавный скролл к началу списка
+    // //функция: плавный скролл к началу списка
     function scrollTop(el){ try{ el.scrollTo({top:0, behavior:"smooth"}); }catch{} }
 
     // ================== PIN-ЗАМОК ==================
-    // //проверка PIN и открытие приложения
+    // //функция: проверка PIN и открытие приложения
     function unlockByPin(){
       const pin = document.getElementById('pin').value.trim();
       const user = PIN_MAP[pin];
@@ -433,7 +418,6 @@
       }
       currentUser = user;
       document.getElementById('userPill').textContent = `Пользователь: ${currentUser}`;
-      // показать приложение
       document.getElementById('lock-screen').style.display = 'none';
       const appRoot = document.getElementById('appRoot');
       appRoot.style.filter = 'none';
@@ -442,74 +426,88 @@
     }
 
     // ================== GOOGLE ИНИЦИАЛИЗАЦИЯ ==================
-    // //инициализация GAPI клиента
+    // //функция: инициализация GAPI клиента
     async function initGapiClient(){
-      await gapi.client.init({
-        apiKey: API_KEY,
-        discoveryDocs: [DISCOVERY_DOC],
-      });
+      await gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
       gapiReady = true;
       maybeEnableAuthButton();
+      tryAutoConnect(); // //тихий вход если уже был консент
     }
-
-    // //инициализация OAuth токен-клиента
+    // //функция: инициализация OAuth токен-клиента (GIS) + silent-автовход
     function initGis(){
       tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
         callback: (tokenResponse)=>{
-          if(tokenResponse && tokenResponse.access_token){
+          // //обработка ответа токена
+          if (tokenResponse && tokenResponse.access_token){
             gapi.client.setToken({ access_token: tokenResponse.access_token });
             hasGoogleAccess = true;
             updateConnDot();
-            // после авторизации — загрузить данные
+            // //запомним, что доступ уже выдавался — далее можно входить тихо
+            localStorage.setItem('gsheets_granted', '1');
+            // //подгрузим данные и запланируем автообновление токена
             loadAllData();
+            scheduleTokenRefresh(tokenResponse.expires_in || 3600);
+          } else if (tokenResponse && tokenResponse.error){
+            console.warn('GIS token error:', tokenResponse.error);
           }
         }
       });
       gisReady = true;
       maybeEnableAuthButton();
+      tryAutoConnect(); // //тихий вход если уже был консент
     }
-
-    // //показать/скрыть кнопку "Подключить Google"
+    // //функция: показать/скрыть кнопку "Подключить Google"
     function maybeEnableAuthButton(){
       const btn = document.getElementById('googleAuthBtn');
       btn.disabled = !(gapiReady && gisReady);
       btn.textContent = (gapiReady && gisReady) ? "Подключить Google" : "Загрузка…";
     }
-
-    // //запросить токен
+    // //функция: запросить доступ (первый явный вход)
     function requestAccess(){
-      if(!tokenClient){ return; }
-      tokenClient.requestAccessToken({ prompt: 'consent' });
+      if(!tokenClient) return;
+      tokenClient.requestAccessToken({ prompt: 'consent' }); // //показать диалог 1-й раз
     }
-
-    // //статус-индикатор подключения
+    // //функция: статус-индикатор подключения
     function updateConnDot(){
       const dot = document.getElementById('connDot');
       dot.classList.toggle('connected', !!hasGoogleAccess);
       dot.title = hasGoogleAccess ? "Google Sheets: подключено" : "Google Sheets: нет доступа";
     }
+    // //функция: тихий автологин при загрузке
+    function tryAutoConnect(){
+      if (!gapiReady || !gisReady || !tokenClient) return;
+      if (localStorage.getItem('gsheets_granted') === '1') {
+        tokenClient.requestAccessToken({ prompt: '' }); // //silent
+      }
+    }
+    // //функция: планировщик продления токена
+    function scheduleTokenRefresh(expiresInSec = 3600){
+      clearTimeout(tokenRefreshTimer);
+      const ms = Math.max(5000, (Number(expiresInSec) - 120) * 1000); // //за 2 мин до истечения
+      tokenRefreshTimer = setTimeout(()=>{
+        if (hasGoogleAccess && tokenClient) {
+          tokenClient.requestAccessToken({ prompt: '' }); // //silent refresh
+        }
+      }, ms);
+    }
 
     // ================== РАБОТА С GOOGLE SHEETS ==================
-    // //получение строк с листа
+    // //функция: получить строки с листа
     async function fetchRows(sheetName){
-      // //получить все строки; если лист пустой — вернётся undefined
       const range = `${sheetName}!A:F`;
       try{
         const res = await gapi.client.sheets.spreadsheets.values.get({
-          spreadsheetId: SPREADSHEET_ID,
-          range
+          spreadsheetId: SPREADSHEET_ID, range
         });
-        const values = res.result.values || [];
-        return values;
+        return res.result.values || [];
       }catch(e){
         console.warn("fetchRows error", e);
         return [];
       }
     }
-
-    // //добавление строк (append)
+    // //функция: добавить строку (append)
     async function appendRow(sheetName, row){
       try{
         const res = await gapi.client.sheets.spreadsheets.values.append({
@@ -525,19 +523,16 @@
         return false;
       }
     }
-
-    // //если лист пуст — поставить заголовок
+    // //функция: если лист пуст — добавить заголовок
     async function ensureHeader(sheetName){
       const rows = await fetchRows(sheetName);
       if ((!rows) || rows.length === 0){
         await appendRow(sheetName, HEADER);
       }else if(rows[0].join("|") !== HEADER.join("|")){
-        // если в первом ряду не наш заголовок, ничего не ломаем
-        // (предполагается, что он уже есть); иначе можно добавить вручную
+        // предполагаем, что заголовок уже есть в пользовательском формате
       }
     }
-
-    // //полная загрузка данных в кэш + рендер
+    // //функция: полная загрузка данных (кэш + рендер)
     async function loadAllData(){
       if(!hasGoogleAccess) return;
       await Promise.all([ensureHeader(SHEET_EXP), ensureHeader(SHEET_INC)]);
@@ -546,11 +541,9 @@
       cacheExp = Array.isArray(exp) ? exp : [];
       cacheInc = Array.isArray(inc) ? inc : [];
 
-      // //удаляем заголовок из кэша при рендере таблиц (если есть)
       const expData = (cacheExp[0] && cacheExp[0][0] === "№") ? cacheExp.slice(1) : cacheExp;
       const incData = (cacheInc[0] && cacheInc[0][0] === "№") ? cacheInc.slice(1) : cacheInc;
 
-      // //пересчёт уникальных списков
       uniqueSourcesExp = new Set(expData.map(r => r[2]).filter(Boolean));
       uniqueCatsExp    = new Set(expData.map(r => r[3]).filter(Boolean));
       uniqueSourcesInc = new Set(incData.map(r => r[2]).filter(Boolean));
@@ -558,18 +551,14 @@
 
       renderList("exp", expData);
       renderList("inc", incData);
-      rebuildDatalists(); // //обновляем подсказки в модалке
+      rebuildDatalists();
     }
 
     // ================== РЕНДЕР СПИСКОВ ==================
-    // //рендер списка для страницы (расходы/доходы)
+    // //функция: рендер списка страниц (расходы/доходы)
     function renderList(kind, rows){
       const listEl = (kind === "exp") ? document.getElementById('expList') : document.getElementById('incList');
-
-      // //очистить все, кроме заголовка
       listEl.querySelectorAll('.row.item').forEach(n => n.remove());
-
-      // //дорисовать
       rows.forEach((r, idx)=>{
         const [no, user, source, category, date, amount] = [
           r[0] || (idx+1),
@@ -592,8 +581,7 @@
         listEl.appendChild(row);
       });
     }
-
-    // //собрать datalist подсказки по текущей вкладке
+    // //функция: собрать datalist-подсказки по текущей вкладке
     function rebuildDatalists(){
       const dlSource = document.getElementById('dlSource');
       const dlCategory = document.getElementById('dlCategory');
@@ -603,42 +591,26 @@
       const srcSet = (createMode === "exp") ? uniqueSourcesExp : uniqueSourcesInc;
       const catSet = (createMode === "exp") ? uniqueCatsExp    : uniqueCatsInc;
 
-      srcSet.forEach(v=>{
-        const opt = document.createElement('option');
-        opt.value = v;
-        dlSource.appendChild(opt);
-      });
-      catSet.forEach(v=>{
-        const opt = document.createElement('option');
-        opt.value = v;
-        dlCategory.appendChild(opt);
-      });
+      srcSet.forEach(v=>{ const opt = document.createElement('option'); opt.value = v; dlSource.appendChild(opt); });
+      catSet.forEach(v=>{ const opt = document.createElement('option'); opt.value = v; dlCategory.appendChild(opt); });
     }
 
     // ================== МОДАЛ СОЗДАНИЯ ==================
-    // //открыть модал создания записи
+    // //функция: открыть модал создания записи
     function openCreate(kind){
       createMode = kind; // "exp" или "inc"
-      document.getElementById('modalTitle').textContent = (kind === "exp") ?
-        "Создание расходной операции" : "Создание доходной операции";
+      document.getElementById('modalTitle').textContent = (kind === "exp") ? "Создание расходной операции" : "Создание доходной операции";
       document.getElementById('formErr').style.display = 'none';
-
-      const dt = document.getElementById('inpDate');
-      dt.value = todayISO();
-
+      document.getElementById('inpDate').value = todayISO();
       document.getElementById('inpSource').value = "";
       document.getElementById('inpCategory').value = "";
       document.getElementById('inpAmount').value = "";
-
       rebuildDatalists();
       document.getElementById('modalCreate').classList.add('open');
     }
-    // //закрыть модал
-    function closeCreate(){
-      document.getElementById('modalCreate').classList.remove('open');
-    }
-
-    // //попытка сохранить запись в Google Sheets
+    // //функция: закрыть модал
+    function closeCreate(){ document.getElementById('modalCreate').classList.remove('open'); }
+    // //функция: сохранить запись в Google Sheets
     async function saveRecord(){
       const src = document.getElementById('inpSource').value.trim();
       const cat = document.getElementById('inpCategory').value.trim();
@@ -651,17 +623,9 @@
         err.style.display = 'block';
         return;
       }
+      if(!currentUser){ alert("Нет пользователя. Сначала разблокируйте по PIN."); return; }
+      if(!hasGoogleAccess){ alert("Нет доступа к Google Sheets. Нажмите «Подключить Google»."); return; }
 
-      if(!currentUser){
-        alert("Нет пользователя. Сначала разблокируйте по PIN.");
-        return;
-      }
-      if(!hasGoogleAccess){
-        alert("Нет доступа к Google Sheets. Нажмите «Подключить Google».");
-        return;
-      }
-
-      // //вычислить следующий №
       const cache = (createMode === "exp") ? cacheExp : cacheInc;
       const rows = (cache[0] && cache[0][0] === "№") ? cache.slice(1) : cache;
       let nextNo = 1;
@@ -671,17 +635,11 @@
         nextNo = (Number.isFinite(lastNo) ? lastNo : rows.length) + 1;
       }
 
-      // //собрать строку для сохранения
       const sheetName = (createMode === "exp") ? SHEET_EXP : SHEET_INC;
       const row = [ nextNo, currentUser, src, cat, date, amount ];
-
       const ok = await appendRow(sheetName, row);
-      if(!ok){
-        alert("Ошибка записи в таблицу. Проверьте права и существование листов «Expenses» и «Incomes».");
-        return;
-      }
+      if(!ok){ alert("Ошибка записи в таблицу. Проверьте права и существование листов «Expenses» и «Incomes»."); return; }
 
-      // //обновить кэш локально (чтобы не ждать повторной загрузки)
       cache.push(row);
       if (createMode === "exp") {
         uniqueSourcesExp.add(src); uniqueCatsExp.add(cat);
@@ -692,15 +650,11 @@
         renderList("inc", (cache[0] && cache[0][0] === "№") ? cache.slice(1) : cache);
         scrollTop(document.getElementById('incList'));
       }
-
       closeCreate();
     }
 
     // ================== СВАЙП МЕЖДУ СТРАНИЦАМИ ==================
-    // //обработчики тач/мышь для свайпа
-    let dragStartX = null;
-    let dragging = false;
-
+    // //функция: установить активную страницу
     function setPage(kind){
       currentPage = kind;
       const pages = document.getElementById('pages');
@@ -714,19 +668,16 @@
         tabInc.classList.add('active'); tabExp.classList.remove('active');
       }
     }
-
-    function onPointerDown(e){
-      dragging = true;
-      dragStartX = e.touches ? e.touches[0].clientX : e.clientX;
-    }
+    // //обработчики свайпа
+    let dragStartX = null; let dragging = false;
+    function onPointerDown(e){ dragging = true; dragStartX = e.touches ? e.touches[0].clientX : e.clientX; }
     function onPointerUp(e){
-      if(!dragging) return;
-      dragging = false;
+      if(!dragging) return; dragging = false;
       const endX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
       const delta = endX - dragStartX;
       if (Math.abs(delta) > 60){
-        if (delta < 0 && currentPage === "exp") setPage("inc");       // влево -> доходы
-        else if (delta > 0 && currentPage === "inc") setPage("exp");  // вправо -> расходы
+        if (delta < 0 && currentPage === "exp") setPage("inc");
+        else if (delta > 0 && currentPage === "inc") setPage("exp");
       }
     }
 
@@ -734,9 +685,7 @@
     window.addEventListener('DOMContentLoaded', ()=>{
       // //PIN
       document.getElementById('pinSubmit').addEventListener('click', unlockByPin);
-      document.getElementById('pin').addEventListener('keydown', (e)=> {
-        if(e.key === 'Enter') unlockByPin();
-      });
+      document.getElementById('pin').addEventListener('keydown', (e)=> { if(e.key === 'Enter') unlockByPin(); });
 
       // //Google
       document.getElementById('googleAuthBtn').addEventListener('click', requestAccess);
@@ -756,11 +705,8 @@
 
       // //форматирование суммы "на лету"
       document.getElementById('inpAmount').addEventListener('input', (e)=>{
-        const caret = e.target.selectionStart;
-        const val = e.target.value;
-        const num = parseAmountInput(val);
+        const num = parseAmountInput(e.target.value);
         e.target.value = Number.isFinite(num) ? fmtAmount(num) : "";
-        // позиция каретки упрощённо (не идеальна при больших числах)
         try{ e.target.setSelectionRange(e.target.value.length, e.target.value.length); }catch{}
       });
 
@@ -773,11 +719,7 @@
 
       // //инициализация gapi/gis после загрузки внешних скриптов
       window.addEventListener('load', ()=>{
-        // gapi
-        if (window.gapi){
-          gapi.load('client', initGapiClient);
-        }
-        // GIS
+        if (window.gapi){ gapi.load('client', initGapiClient); }
         const waitGis = setInterval(()=>{
           if (window.google && window.google.accounts && window.google.accounts.oauth2){
             clearInterval(waitGis);
