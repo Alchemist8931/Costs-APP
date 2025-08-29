@@ -513,6 +513,12 @@
       appRoot.style.pointerEvents = 'auto';
       appRoot.setAttribute('aria-hidden','false');
     }
+
+    if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js');
+  });
+}
   </script>
 </body>
 </html>
