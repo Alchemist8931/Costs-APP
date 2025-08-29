@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Модальное приложение: Доходы/Расходы</title>
+
+  <style>
+    /* ================== CSS ПЕРЕМЕННЫЕ (через :root) ================== */
+    :root{
+      --bg-image-url: url("https://drive.google.com/uc?export=view&id=1VBisGzu10gglUjR8WP92DseOPlYGFfNH"); /* фон с Google Drive */
+      --text: #ffffff;               /* основной цвет текста */
+      --muted: #cfd3dc;              /* вторичный текст */
+      --accent: #5ad1ff;             /* акцент (кнопки/выделения) */
+      --accent-2: #9ae6b4;           /* акцент 2 (успех) */
+      --danger: #ff6b6b;             /* ошибки/удаление */
+      --card: rgba(8, 10, 14, 0.72); /* фон карточек */
+      --card-strong: rgba(8, 10, 14, 0.92);
+      --border: rgba(255,255,255,0.15);
+      --shadow: 0 10px 30px rgba(0,0,0,0.45);
+      --radius: 16px;
+      --radius-sm: 12px;
+
+      --input-h: 46px;
+      --container-w: min(1100px, 92vw);
+      --list-h: min(52vh, 520px);
+    }
+
+    /* ================== БАЗОВАЯ СЦЕНА/ФОН ================== */
+    html, body { height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: #0b0f14;
+      background-image: var(--bg-image-url);
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    /* затемняющая вуаль над фоном */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      background: radial-gradient(1200px 700px at 20% 15%, rgba(0,0,0,0.25), transparent 65%),
+                  linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.75));
+      pointer-events:none;
+    }
+
+    /* ================== ЗАМКНУТЫЙ ЭКРАН (PIN) ================== */
+    #lock-screen{
+      position: fixed; inset:0;
+      display: grid; place-items: center;
+      backdrop-filter: blur(6px);
+      background: rgba(0,0,0,0.45);
+      z-index: 9999;
+    }
+    .lock-card{
+      width: min(460px, 90vw);
+      padding: 28px;
+      background: var(--card-strong);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .lock-title{ font-size: 20px; margin: 0 0 10px 0; font-weight: 700; }
+    .lock-sub{ color: var(--muted); margin: 0 0 18px 0; font-size: 14px; }
+    .pin-row{ display:flex; gap: 10px; align-items:center; }
+    .pin-input{
+      flex:1;
+      height: var(--input-h);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 0 14px;
+      font-size: 16px;
+      outline: none;
+    }
+    .btn{
+      height: var(--input-h);
+      padding: 0 16px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(90,209,255,0.25), rgba(90,209,255,0.1));
+      color: var(--text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn.secondary{
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+    }
+    .pin-hint{ margin-top: 10px; color: var(--muted); font-size: 12px; }
+
+    /* ================== ОСНОВНОЕ МОДАЛЬНОЕ ПРИЛОЖЕНИЕ ================== */
+    .app-wrap{
+      display:flex; align-items:center; justify-content:center;
+      min-height: 100dvh; padding: 5vh 0;
+    }
+    .app-card{
+      width: var(--container-w);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+    .app-header{
+      display:flex; justify-content:space-between; align-items:center;
+      padding: 16px 18px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid var(--border);
+    }
+    .brand{
+      display:flex; gap: 10px; align-items:center; font-weight: 800; letter-spacing: .5px;
+    }
+    .brand .tag{
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+    }
+    .user-pill{
+      color: var(--muted);
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.03);
+    }
+
+    /* ================== ТАБЫ / ПЕРЕКЛЮЧЕНИЕ СТРАНИЦ ================== */
+    .tabs{
+      display:flex; gap:8px; padding: 12px 12px 2px 12px; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .tab{
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      font-weight: 600; cursor: pointer;
+    }
+    .tab.active{ color: var(--text); background: rgba(255,255,255,0.08); }
+
+    /* полоса с подсказкой свайпа */
+    .swipe-hint{
+      text-align:center; font-size: 12px; color: var(--muted);
+      padding: 6px 0 10px 0;
+    }
+
+    /* ================== ПАНЕЛИ СТРАНИЦ (Свайп влево/вправо) ================== */
+    .pages{
+      position: relative; width: 200%; display: flex; transition: transform .35s ease;
+    }
+    .page{
+      width: 50%; padding: 14px; box-sizing: border-box;
+    }
+
+    /* ================== ПАНЕЛЬ ДЕЙСТВИЙ И СПИСОК ================== */
+    .actions{
+      display:flex; gap: 10px; align-items:center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .left{
+      display:flex; gap:10px; align-items:center;
+    }
+    .status-dot{
+      width: 10px; height: 10px; border-radius: 999px; background: #777; border: 1px solid var(--border);
+    }
+    .status-dot.connected{ background: var(--accent-2); }
+
+    .list-card{
+      height: var(--list-h);
+      overflow-y: auto; overscroll-behavior: contain;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: rgba(20, 24, 30, 0.55);
+    }
+
+    /* ================== СТРОКА СПИСКА ================== */
+    .row{
+      display:grid;
+      grid-template-columns: 64px 160px 1fr 1fr 160px 180px;
+      gap: 10px;
+      padding: 10px 12px;
+      align-items:center;
+      border-bottom: 1px dashed var(--border);
+    }
+    .row.head{
+      position: sticky; top: 0;
+      background: rgba(8,10,14,0.9);
+      border-bottom: 1px solid var(--border);
+      z-index: 1; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px;
+    }
+    .field{
+      height: var(--input-h);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding: 0 12px;
+      font-size: 14px;
+      outline: none;
+    }
+    .field[readonly]{ opacity:.85 }
+    .field.short{ text-align: center; }
+
+    /* ================== МОДАЛ СОЗДАНИЯ ЗАПИСИ ================== */
+    .modal{
+      position: fixed; inset:0; display:none; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.55); z-index: 9000;
+    }
+    .modal.open{ display:flex; }
+    .modal-card{
+      width: min(560px, 92vw); padding: 18px; background: var(--card-strong);
+      border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+    }
+    .modal-title{ margin: 0 0 12px 0; font-size: 18px; font-weight: 800; }
+    .grid{
+      display:grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    .form-actions{ display:flex; gap:10px; justify-content: flex-end; margin-top: 14px; }
+
+    /* ================== АВТОКОМПЛИТ (datalist вид) ================== */
+    .hint{ font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    /* ================== АДАПТИВ ================== */
+    @media (max-width: 980px){
+      .row{
+        grid-template-columns: 52px 132px 1fr 1fr 132px 150px;
+      }
+    }
+    @media (max-width: 760px){
+      .row{
+        grid-template-columns: 44px 116px 1fr 1fr;
+        grid-auto-rows: var(--input-h);
+      }
+      .col-date{ grid-column: 1 / span 2; }
+      .col-amount{ grid-column: 3 / span 2; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================== ЗАМКНУТЫЙ ЭКРАН (PIN) ================== -->
+  <div id="lock-screen">
+    <div class="lock-card">
+      <h3 class="lock-title">Доступ по PIN-коду</h3>
+      <p class="lock-sub">Введите PIN. Контент приложения скрыт до успешной авторизации.</p>
+      <div class="pin-row">
+        <input id="pin" class="pin-input" type="password" maxlength="8" placeholder="Введите PIN…" />
+        <button id="pinSubmit" class="btn">Войти</button>
+      </div>
+      <div class="pin-hint">PIN 8931 → <b>Alchemist</b> · PIN 2401 → <b>Ardente Stella</b></div>
+      <div id="pinError" class="pin-hint" style="color:var(--danger); display:none;">Неверный PIN</div>
+    </div>
+  </div>
+
+  <!-- ================== ОСНОВНОЙ КАРКАС ПРИЛОЖЕНИЯ ================== -->
+  <div class="app-wrap" aria-hidden="true" id="appRoot" style="filter: blur(4px); pointer-events:none;">
+    <div class="app-card" id="swipeArea">
+      <div class="app-header">
+        <div class="brand">Финансовый журнал <span class="tag">модальное приложение</span></div>
+        <div class="user-pill" id="userPill">Пользователь: —</div>
+      </div>
+
+      <!-- Табы + статус подключения -->
+      <div class="tabs">
+        <div class="tab active" id="tab-exp">Расходы</div>
+        <div class="tab" id="tab-inc">Доходы</div>
+        <div style="flex:1"></div>
+        <div class="left">
+          <div id="connDot" class="status-dot" title="Статус Google Sheets"></div>
+          <button id="googleAuthBtn" class="btn secondary" title="Для записи/чтения в Google Sheets">Подключить Google</button>
+        </div>
+      </div>
+      <div class="swipe-hint">Смахивайте влево/вправо для переключения между страницами</div>
+
+      <!-- Полотно страниц -->
+      <div class="pages" id="pages">
+        <!-- ----------- СТРАНИЦА РАСХОДЫ ----------- -->
+        <section class="page" id="page-exp">
+          <div class="actions">
+            <button class="btn" id="createExpBtn">Создать расход</button>
+            <div style="color:var(--muted); font-size:13px;">Текущая вкладка: <b>Расходы</b></div>
+          </div>
+          <div class="list-card" id="expList">
+            <div class="row head">
+              <div>№ п/п</div><div>Пользователь</div><div>Источник</div><div>Категория</div><div>Дата</div><div>Сумма</div>
+            </div>
+            <!-- строки будут дорисованы скриптом -->
+          </div>
+        </section>
+
+        <!-- ----------- СТРАНИЦА ДОХОДЫ ----------- -->
+        <section class="page" id="page-inc">
+          <div class="actions">
+            <button class="btn" id="createIncBtn">Создать доход</button>
+            <div style="color:var(--muted); font-size:13px;">Текущая вкладка: <b>Доходы</b></div>
+          </div>
+          <div class="list-card" id="incList">
+            <div class="row head">
+              <div>№ п/п</div><div>Пользователь</div><div>Источник</div><div>Категория</div><div>Дата</div><div>Сумма</div>
+            </div>
+            <!-- строки будут дорисованы скриптом -->
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================== МОДАЛ СОЗДАНИЯ ЗАПИСИ ================== -->
+  <div class="modal" id="modalCreate">
+    <div class="modal-card">
+      <h4 class="modal-title" id="modalTitle">Создание операции</h4>
+      <div class="grid">
+        <div>
+          <label>Источник</label>
+          <input id="inpSource" class="field" list="dlSource" placeholder="Введите или выберите…"/>
+          <datalist id="dlSource"></datalist>
+        </div>
+        <div>
+          <label>Категория</label>
+          <input id="inpCategory" class="field" list="dlCategory" placeholder="Введите или выберите…"/>
+          <datalist id="dlCategory"></datalist>
+        </div>
+        <div>
+          <label>Дата</label>
+          <input id="inpDate" class="field" type="date"/>
+        </div>
+        <div>
+          <label>Сумма</label>
+          <input id="inpAmount" class="field" inputmode="numeric" placeholder="Только целое число"/>
+        </div>
+      </div>
+      <div class="hint">№ и Пользователь проставятся автоматически</div>
+      <div class="form-actions">
+        <button class="btn secondary" id="btnCancel">Отмена</button>
+        <button class="btn" id="btnSave">Сохранить</button>
+      </div>
+      <div id="formErr" class="hint" style="color:var(--danger); display:none;">Заполните корректно все поля</div>
+    </div>
+  </div>
+
+  <!-- ================== GOOGLE API (загрузятся асинхронно) ================== -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" async defer></script>
+
+  <script>
+    // ================== ГРУППА КОНСТАНТ/НАСТРОЕК ==================
+    // //ключи и настройки интеграции Google API (замените на свои)
+    const API_KEY = "PASTE_YOUR_API_KEY_HERE";                       // //ключ API для Google Sheets
+    const CLIENT_ID = "PASTE_YOUR_OAUTH_CLIENT_ID.apps.googleusercontent.com"; // //OAuth Client ID
+    const SCOPES = "https://www.googleapis.com/auth/spreadsheets";   // //область доступа
+    const DISCOVERY_DOC = "https://sheets.googleapis.com/$discovery/rest?version=v4"; // //документация
+
+    // //идентификатор вашей таблицы (из предоставленной ссылки)
+    const SPREADSHEET_ID = "1fZjbEQRPbSsh-dzzmX4VIdU4-dH5qXGONHSx0biY1xg";
+    // //имена листов (создайте 2 вкладки в таблице с такими названиями)
+    const SHEET_EXP = "Expenses"; // //лист для расходов
+    const SHEET_INC = "Incomes";  // //лист для доходов
+
+    // //отображаемые колонки и их порядок в Google Sheets
+    // //["№","Пользователь","Источник","Категория","Дата","Сумма"]
+    const HEADER = ["№","Пользователь","Источник","Категория","Дата","Сумма"];
+
+    // //пользователи (по PIN)
+    const PIN_MAP = {
+      "8931": "Alchemist",
+      "2401": "Ardente Stella",
+    };
+
+    // //состояние приложения
+    let currentUser = null;           // //текущий пользователь (строка)
+    let currentPage = "exp";          // //exp|inc
+    let tokenClient = null;           // //OAuth клиент
+    let gapiReady = false;            // //флаг готовности gapi
+    let gisReady = false;             // //флаг готовности GIS
+    let hasGoogleAccess = false;      // //подключение к Google разрешено
+    let cacheExp = [];                // //кэш строк расходов (массив массивов)
+    let cacheInc = [];                // //кэш строк доходов (массив массивов)
+    let uniqueSourcesExp = new Set(); // //уникальные источники для расходов
+    let uniqueCatsExp = new Set();    // //уникальные категории для расходов
+    let uniqueSourcesInc = new Set(); // //уникальные источники для доходов
+    let uniqueCatsInc = new Set();    // //уникальные категории для доходов
+    let createMode = "exp";           // //в каком листе создаём (exp/inc)
+
+    // ================== УТИЛИТЫ ==================
+    // //форматирование суммы "1 234 567"
+    function fmtAmount(num){
+      try{
+        const n = Number(num);
+        if (Number.isNaN(n)) return "";
+        return n.toLocaleString('ru-RU', {maximumFractionDigits:0});
+      }catch(e){ return ""; }
+    }
+
+    // //из форматированного ввода → число
+    function parseAmountInput(s){
+      if(!s) return NaN;
+      const digits = (s+"").replace(/[^\d]/g,"");
+      return digits ? Number(digits) : NaN;
+    }
+
+    // //сегодняшняя дата в формате yyyy-mm-dd
+    function todayISO(){
+      const d = new Date();
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const dd = String(d.getDate()).padStart(2,"0");
+      return `${d.getFullYear()}-${mm}-${dd}`;
+    }
+
+    // //плавный скролл к началу списка
+    function scrollTop(el){ try{ el.scrollTo({top:0, behavior:"smooth"}); }catch{} }
+
+    // ================== PIN-ЗАМОК ==================
+    // //проверка PIN и открытие приложения
+    function unlockByPin(){
+      const pin = document.getElementById('pin').value.trim();
+      const user = PIN_MAP[pin];
+      const err = document.getElementById('pinError');
+      if(!user){
+        err.style.display = 'block';
+        setTimeout(()=> err.style.display='none', 1600);
+        return;
+      }
+      currentUser = user;
+      document.getElementById('userPill').textContent = `Пользователь: ${currentUser}`;
+      // показать приложение
+      document.getElementById('lock-screen').style.display = 'none';
+      const appRoot = document.getElementById('appRoot');
+      appRoot.style.filter = 'none';
+      appRoot.style.pointerEvents = 'auto';
+      appRoot.setAttribute('aria-hidden','false');
+    }
+
+    // ================== GOOGLE ИНИЦИАЛИЗАЦИЯ ==================
+    // //инициализация GAPI клиента
+    async function initGapiClient(){
+      await gapi.client.init({
+        apiKey: API_KEY,
+        discoveryDocs: [DISCOVERY_DOC],
+      });
+      gapiReady = true;
+      maybeEnableAuthButton();
+    }
+
+    // //инициализация OAuth токен-клиента
+    function initGis(){
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: (tokenResponse)=>{
+          if(tokenResponse && tokenResponse.access_token){
+            gapi.client.setToken({ access_token: tokenResponse.access_token });
+            hasGoogleAccess = true;
+            updateConnDot();
+            // после авторизации — загрузить данные
+            loadAllData();
+          }
+        }
+      });
+      gisReady = true;
+      maybeEnableAuthButton();
+    }
+
+    // //показать/скрыть кнопку "Подключить Google"
+    function maybeEnableAuthButton(){
+      const btn = document.getElementById('googleAuthBtn');
+      btn.disabled = !(gapiReady && gisReady);
+      btn.textContent = (gapiReady && gisReady) ? "Подключить Google" : "Загрузка…";
+    }
+
+    // //запросить токен
+    function requestAccess(){
+      if(!tokenClient){ return; }
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    }
+
+    // //статус-индикатор подключения
+    function updateConnDot(){
+      const dot = document.getElementById('connDot');
+      dot.classList.toggle('connected', !!hasGoogleAccess);
+      dot.title = hasGoogleAccess ? "Google Sheets: подключено" : "Google Sheets: нет доступа";
+    }
+
+    // ================== РАБОТА С GOOGLE SHEETS ==================
+    // //получение строк с листа
+    async function fetchRows(sheetName){
+      // //получить все строки; если лист пустой — вернётся undefined
+      const range = `${sheetName}!A:F`;
+      try{
+        const res = await gapi.client.sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range
+        });
+        const values = res.result.values || [];
+        return values;
+      }catch(e){
+        console.warn("fetchRows error", e);
+        return [];
+      }
+    }
+
+    // //добавление строк (append)
+    async function appendRow(sheetName, row){
+      try{
+        const res = await gapi.client.sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `${sheetName}!A:F`,
+          valueInputOption: 'USER_ENTERED',
+          insertDataOption: 'INSERT_ROWS',
+          resource: { values: [ row ] }
+        });
+        return !!res;
+      }catch(e){
+        console.error("appendRow error", e);
+        return false;
+      }
+    }
+
+    // //если лист пуст — поставить заголовок
+    async function ensureHeader(sheetName){
+      const rows = await fetchRows(sheetName);
+      if ((!rows) || rows.length === 0){
+        await appendRow(sheetName, HEADER);
+      }else if(rows[0].join("|") !== HEADER.join("|")){
+        // если в первом ряду не наш заголовок, ничего не ломаем
+        // (предполагается, что он уже есть); иначе можно добавить вручную
+      }
+    }
+
+    // //полная загрузка данных в кэш + рендер
+    async function loadAllData(){
+      if(!hasGoogleAccess) return;
+      await Promise.all([ensureHeader(SHEET_EXP), ensureHeader(SHEET_INC)]);
+
+      const [exp, inc] = await Promise.all([fetchRows(SHEET_EXP), fetchRows(SHEET_INC)]);
+      cacheExp = Array.isArray(exp) ? exp : [];
+      cacheInc = Array.isArray(inc) ? inc : [];
+
+      // //удаляем заголовок из кэша при рендере таблиц (если есть)
+      const expData = (cacheExp[0] && cacheExp[0][0] === "№") ? cacheExp.slice(1) : cacheExp;
+      const incData = (cacheInc[0] && cacheInc[0][0] === "№") ? cacheInc.slice(1) : cacheInc;
+
+      // //пересчёт уникальных списков
+      uniqueSourcesExp = new Set(expData.map(r => r[2]).filter(Boolean));
+      uniqueCatsExp    = new Set(expData.map(r => r[3]).filter(Boolean));
+      uniqueSourcesInc = new Set(incData.map(r => r[2]).filter(Boolean));
+      uniqueCatsInc    = new Set(incData.map(r => r[3]).filter(Boolean));
+
+      renderList("exp", expData);
+      renderList("inc", incData);
+      rebuildDatalists(); // //обновляем подсказки в модалке
+    }
+
+    // ================== РЕНДЕР СПИСКОВ ==================
+    // //рендер списка для страницы (расходы/доходы)
+    function renderList(kind, rows){
+      const listEl = (kind === "exp") ? document.getElementById('expList') : document.getElementById('incList');
+
+      // //очистить все, кроме заголовка
+      listEl.querySelectorAll('.row.item').forEach(n => n.remove());
+
+      // //дорисовать
+      rows.forEach((r, idx)=>{
+        const [no, user, source, category, date, amount] = [
+          r[0] || (idx+1),
+          r[1] || "",
+          r[2] || "",
+          r[3] || "",
+          r[4] || "",
+          r[5] || ""
+        ];
+        const row = document.createElement('div');
+        row.className = 'row item';
+        row.innerHTML = `
+          <input class="field short" value="${no}" readonly title="№ п/п"/>
+          <input class="field" value="${user}" readonly title="Пользователь"/>
+          <input class="field" value="${source}" readonly title="Источник"/>
+          <input class="field" value="${category}" readonly title="Категория"/>
+          <input class="field col-date" value="${date}" readonly title="Дата"/>
+          <input class="field col-amount" value="${fmtAmount(amount)}" readonly title="Сумма"/>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    // //собрать datalist подсказки по текущей вкладке
+    function rebuildDatalists(){
+      const dlSource = document.getElementById('dlSource');
+      const dlCategory = document.getElementById('dlCategory');
+      dlSource.innerHTML = '';
+      dlCategory.innerHTML = '';
+
+      const srcSet = (createMode === "exp") ? uniqueSourcesExp : uniqueSourcesInc;
+      const catSet = (createMode === "exp") ? uniqueCatsExp    : uniqueCatsInc;
+
+      srcSet.forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = v;
+        dlSource.appendChild(opt);
+      });
+      catSet.forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = v;
+        dlCategory.appendChild(opt);
+      });
+    }
+
+    // ================== МОДАЛ СОЗДАНИЯ ==================
+    // //открыть модал создания записи
+    function openCreate(kind){
+      createMode = kind; // "exp" или "inc"
+      document.getElementById('modalTitle').textContent = (kind === "exp") ?
+        "Создание расходной операции" : "Создание доходной операции";
+      document.getElementById('formErr').style.display = 'none';
+
+      const dt = document.getElementById('inpDate');
+      dt.value = todayISO();
+
+      document.getElementById('inpSource').value = "";
+      document.getElementById('inpCategory').value = "";
+      document.getElementById('inpAmount').value = "";
+
+      rebuildDatalists();
+      document.getElementById('modalCreate').classList.add('open');
+    }
+    // //закрыть модал
+    function closeCreate(){
+      document.getElementById('modalCreate').classList.remove('open');
+    }
+
+    // //попытка сохранить запись в Google Sheets
+    async function saveRecord(){
+      const src = document.getElementById('inpSource').value.trim();
+      const cat = document.getElementById('inpCategory').value.trim();
+      const date = document.getElementById('inpDate').value.trim();
+      const amountStr = document.getElementById('inpAmount').value.trim();
+      const err = document.getElementById('formErr');
+
+      const amount = parseAmountInput(amountStr);
+      if(!src || !cat || !date || !Number.isFinite(amount)){
+        err.style.display = 'block';
+        return;
+      }
+
+      if(!currentUser){
+        alert("Нет пользователя. Сначала разблокируйте по PIN.");
+        return;
+      }
+      if(!hasGoogleAccess){
+        alert("Нет доступа к Google Sheets. Нажмите «Подключить Google».");
+        return;
+      }
+
+      // //вычислить следующий №
+      const cache = (createMode === "exp") ? cacheExp : cacheInc;
+      const rows = (cache[0] && cache[0][0] === "№") ? cache.slice(1) : cache;
+      let nextNo = 1;
+      if (rows.length){
+        const last = rows[rows.length - 1];
+        const lastNo = parseInt(last[0] || "0", 10);
+        nextNo = (Number.isFinite(lastNo) ? lastNo : rows.length) + 1;
+      }
+
+      // //собрать строку для сохранения
+      const sheetName = (createMode === "exp") ? SHEET_EXP : SHEET_INC;
+      const row = [ nextNo, currentUser, src, cat, date, amount ];
+
+      const ok = await appendRow(sheetName, row);
+      if(!ok){
+        alert("Ошибка записи в таблицу. Проверьте права и существование листов «Expenses» и «Incomes».");
+        return;
+      }
+
+      // //обновить кэш локально (чтобы не ждать повторной загрузки)
+      cache.push(row);
+      if (createMode === "exp") {
+        uniqueSourcesExp.add(src); uniqueCatsExp.add(cat);
+        renderList("exp", (cache[0] && cache[0][0] === "№") ? cache.slice(1) : cache);
+        scrollTop(document.getElementById('expList'));
+      } else {
+        uniqueSourcesInc.add(src); uniqueCatsInc.add(cat);
+        renderList("inc", (cache[0] && cache[0][0] === "№") ? cache.slice(1) : cache);
+        scrollTop(document.getElementById('incList'));
+      }
+
+      closeCreate();
+    }
+
+    // ================== СВАЙП МЕЖДУ СТРАНИЦАМИ ==================
+    // //обработчики тач/мышь для свайпа
+    let dragStartX = null;
+    let dragging = false;
+
+    function setPage(kind){
+      currentPage = kind;
+      const pages = document.getElementById('pages');
+      const tabExp = document.getElementById('tab-exp');
+      const tabInc = document.getElementById('tab-inc');
+      if (kind === "exp"){
+        pages.style.transform = 'translateX(0%)';
+        tabExp.classList.add('active'); tabInc.classList.remove('active');
+      } else {
+        pages.style.transform = 'translateX(-50%)';
+        tabInc.classList.add('active'); tabExp.classList.remove('active');
+      }
+    }
+
+    function onPointerDown(e){
+      dragging = true;
+      dragStartX = e.touches ? e.touches[0].clientX : e.clientX;
+    }
+    function onPointerUp(e){
+      if(!dragging) return;
+      dragging = false;
+      const endX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+      const delta = endX - dragStartX;
+      if (Math.abs(delta) > 60){
+        if (delta < 0 && currentPage === "exp") setPage("inc");       // влево -> доходы
+        else if (delta > 0 && currentPage === "inc") setPage("exp");  // вправо -> расходы
+      }
+    }
+
+    // ================== ПРИВЯЗКА СОБЫТИЙ UI ==================
+    window.addEventListener('DOMContentLoaded', ()=>{
+      // //PIN
+      document.getElementById('pinSubmit').addEventListener('click', unlockByPin);
+      document.getElementById('pin').addEventListener('keydown', (e)=> {
+        if(e.key === 'Enter') unlockByPin();
+      });
+
+      // //Google
+      document.getElementById('googleAuthBtn').addEventListener('click', requestAccess);
+      updateConnDot();
+
+      // //табы
+      document.getElementById('tab-exp').addEventListener('click', ()=> setPage('exp'));
+      document.getElementById('tab-inc').addEventListener('click', ()=> setPage('inc'));
+
+      // //кнопки создать
+      document.getElementById('createExpBtn').addEventListener('click', ()=> openCreate('exp'));
+      document.getElementById('createIncBtn').addEventListener('click', ()=> openCreate('inc'));
+
+      // //модал
+      document.getElementById('btnCancel').addEventListener('click', closeCreate);
+      document.getElementById('btnSave').addEventListener('click', saveRecord);
+
+      // //форматирование суммы "на лету"
+      document.getElementById('inpAmount').addEventListener('input', (e)=>{
+        const caret = e.target.selectionStart;
+        const val = e.target.value;
+        const num = parseAmountInput(val);
+        e.target.value = Number.isFinite(num) ? fmtAmount(num) : "";
+        // позиция каретки упрощённо (не идеальна при больших числах)
+        try{ e.target.setSelectionRange(e.target.value.length, e.target.value.length); }catch{}
+      });
+
+      // //свайп по области
+      const swipeArea = document.getElementById('swipeArea');
+      swipeArea.addEventListener('touchstart', onPointerDown, {passive:true});
+      swipeArea.addEventListener('touchend', onPointerUp, {passive:true});
+      swipeArea.addEventListener('mousedown', onPointerDown);
+      window.addEventListener('mouseup', onPointerUp);
+
+      // //инициализация gapi/gis после загрузки внешних скриптов
+      window.addEventListener('load', ()=>{
+        // gapi
+        if (window.gapi){
+          gapi.load('client', initGapiClient);
+        }
+        // GIS
+        const waitGis = setInterval(()=>{
+          if (window.google && window.google.accounts && window.google.accounts.oauth2){
+            clearInterval(waitGis);
+            initGis();
+          }
+        }, 150);
+      });
+    });
+  </script>
+</body>
+</html>
