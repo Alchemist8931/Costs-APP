@@ -105,7 +105,7 @@
 
     /* ===== Табы и свайп ===== */
     .tabs{ display:flex; gap:8px; padding: 12px 12px 2px 12px; }
-    .tab{ padding: 10px 14px; border: 1px solid var(--border); border-bottom: none; border-radius: 12px 12px 0 0; background: rgba(255,255,255,0.03); color: var(--muted); font-weight: 600; cursor: pointer; }
+    .tab{ padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.03); color: var(--muted); font-weight: 600; cursor: pointer; }
     .tab.active{ color: var(--text); background: rgba(255,255,255,0.08); }
     .swipe-hint{ text-align:center; font-size: 12px; color: var(--muted); padding: 6px 0 10px 0; }
 
@@ -203,7 +203,6 @@
         <div style="flex:1"></div>
         <div style="color:var(--muted); font-size:13px;">status: <b id="statusText">…</b></div>
       </div>
-      <div class="swipe-hint">swipe left / right</div>
 
       <div class="pages" id="pages">
         <!-- Расходы -->
