@@ -178,7 +178,7 @@
   <!-- ===== Экран PIN ===== -->
   <div id="lock-screen">
     <div class="lock-card">
-      <h3 class="lock-title">Доступ по PIN-коду</h3>
+      <h3 class="lock-title">Введите PIN</h3>
       <p class="lock-sub">Введите PIN. Контент приложения скрыт до успешной авторизации.</p>
       <div class="pin-row">
         <input id="pin" class="pin-input" type="password" maxlength="8" placeholder="Введите PIN…" />
@@ -193,41 +193,35 @@
   <div class="app-wrap" aria-hidden="true" id="appRoot" style="filter: blur(4px); pointer-events:none;">
     <div class="app-card" id="swipeArea">
       <div class="app-header">
-        <div class="brand">Финансовый журнал <span class="tag">без OAuth на клиенте</span></div>
-        <div class="user-pill" id="userPill">Пользователь: —</div>
+        <div class="brand">FINANCIAL ACCOUNING<span class="tag">no OAuth on the client</span></div>
+        <div class="user-pill" id="userPill">user —</div>
       </div>
 
       <div class="tabs">
-        <div class="tab active" id="tab-exp">Расходы</div>
-        <div class="tab" id="tab-inc">Доходы</div>
+        <div class="tab active" id="tab-exp">EXPENSE</div>
+        <div class="tab" id="tab-inc">INCOME</div>
         <div style="flex:1"></div>
-        <div style="color:var(--muted); font-size:13px;">Статус данных: <b id="statusText">…</b></div>
+        <div style="color:var(--muted); font-size:13px;">status: <b id="statusText">…</b></div>
       </div>
-      <div class="swipe-hint">Смахивайте влево/вправо для переключения между страницами</div>
+      <div class="swipe-hint">swipe left / right</div>
 
       <div class="pages" id="pages">
         <!-- Расходы -->
         <section class="page" id="page-exp">
           <div class="actions">
-            <button class="btn" id="createExpBtn">Создать расход</button>
-            <div style="color:var(--muted); font-size:13px;">Текущая вкладка: <b>Расходы</b></div>
+            <button class="btn" id="createExpBtn">create an expense</button>
+            <div style="color:var(--muted); font-size:13px;">sub page: <b>EXPENSE</b></div>
           </div>
           <div class="list-card" id="expList">
-            <div class="row head">
-              <div>№ п/п</div><div>Пользователь</div><div>Источник</div><div>Категория</div><div>Дата</div><div>Сумма</div>
-            </div>
           </div>
         </section>
         <!-- Доходы -->
         <section class="page" id="page-inc">
           <div class="actions">
-            <button class="btn" id="createIncBtn">Создать доход</button>
-            <div style="color:var(--muted); font-size:13px;">Текущая вкладка: <b>Доходы</b></div>
+            <button class="btn" id="createIncBtn">create an income</button>
+            <div style="color:var(--muted); font-size:13px;">sub page: <b>INCOME</b></div>
           </div>
           <div class="list-card" id="incList">
-            <div class="row head">
-              <div>№ п/п</div><div>Пользователь</div><div>Источник</div><div>Категория</div><div>Дата</div><div>Сумма</div>
-            </div>
           </div>
         </section>
       </div>
