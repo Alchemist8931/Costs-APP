@@ -33,7 +33,7 @@
     }
 
     /* ===== Базовый фон ===== */
-    html, body { height:100%; }
+    html, body { height:100%; overflow-y: hidden; }
     body{
       margin:0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial;
@@ -76,7 +76,7 @@
     .pin-hint{ margin-top: 10px; color: var(--muted); font-size: 12px; }
 
     /* ===== Каркас приложения ===== */
-    .app-wrap{ display:flex; align-items:center; justify-content:center; min-height: 100dvh; padding: 5vh 0; }
+    .app-wrap{ display:flex; align-items:center; justify-content:center; min-height: 100dvh; }
     .app-card{
       width: var(--container-w); background: var(--card); border: 1px solid var(--border);
       border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; position: relative;
@@ -130,9 +130,10 @@
     .modal{ position: fixed; inset:0; display:none; align-items:center; justify-content:center; background: rgba(0,0,0,0.55); z-index: 9000; }
     .modal.open{ display:flex; }
     .modal-card{
-      width: min(560px, 92vw); padding: 18px; background: var(--card-strong);
-      border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
-    }
+        width: min(560px, 92vw); padding: 18px; background: var(--card-strong);
+        border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow);
+        max-height: 90vh; overflow-y: auto;
+      }
     .modal-title{ margin: 0 0 12px 0; font-size: 18px; font-weight: 800; }
     .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .form-actions{ display:flex; gap:10px; justify-content: flex-end; margin-top: 14px; }
