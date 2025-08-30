@@ -91,7 +91,7 @@
     }
     .app-header{
       display:flex; justify-content:space-between; align-items:center;
-      padding: 16px 18px; background: rgba(255,255,255,0.04); border-bottom: 1px solid var(--border);
+      padding: 16px 18px;
     }
     .brand{ display:flex; gap: 10px; align-items:center; font-weight: 800; letter-spacing: .5px; }
     .brand .tag{
@@ -527,7 +527,7 @@
         return;
       }
       currentUser = user;
-      document.getElementById('userPill').textContent = `Пользователь: ${currentUser}`;
+      document.getElementById('userPill').textContent = `user: ${currentUser}`;
       document.getElementById('lock-screen').style.display = 'none';
       const appRoot = document.getElementById('appRoot');
       appRoot.style.filter = 'none';
