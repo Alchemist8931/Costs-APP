@@ -65,11 +65,20 @@
     }
     .lock-title{ font-size: 20px; margin: 0 0 10px 0; font-weight: 700; }
     .lock-sub{ color: var(--muted); margin: 0 0 18px 0; font-size: 14px; }
-    .pin-row{ display:flex; gap: 10px; align-items:center; }
+     .pin-pad{ text-align:center; }
     .pin-input{
-      flex:1; height: var(--input-h); border-radius: 10px; border: 1px solid var(--border);
+      width:100%; height: var(--input-h); border-radius: 10px; border: 1px solid var(--border);
       background: rgba(255,255,255,0.06); color: var(--text); padding: 0 14px; font-size: 16px; outline: none;
+      margin-bottom:18px;
     }
+    .pin-keys{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+    .pin-key{
+      width:46px; height:46px; line-height:46px; border-radius:50%; border:1px solid var(--border);
+      color: var(--text); cursor:pointer; user-select:none; transition:.3s;
+    }
+    .pin-key:hover{ background: rgba(255,255,255,0.08); }
+    .pin-actions{ margin-top:16px; display:flex; gap:10px; justify-content:center; }
+    .btn-sm{ height:var(--input-h); padding:0 14px; }
     .btn{
       height: var(--input-h); padding: 0 16px; border: 1px solid var(--border);
       border-radius: 12px; background: linear-gradient(180deg, rgba(90,209,255,0.25), rgba(90,209,255,0.1));
@@ -179,16 +188,19 @@
 
   <!-- ===== Экран PIN ===== -->
   <div id="lock-screen">
-    <div class="lock-card">
-      <h3 class="lock-title">Введите PIN</h3>
-      <p class="lock-sub">Введите PIN. Контент приложения скрыт до успешной авторизации.</p>
-      <div class="pin-row">
-        <input id="pin" class="pin-input" type="password" maxlength="8" placeholder="Введите PIN…" />
-        <button id="pinSubmit" class="btn">Войти</button>
+      <div class="lock-card">
+        <h3 class="lock-title">Введите PIN</h3>
+        <div class="pin-pad">
+          <input id="pin" class="pin-input" type="password" maxlength="4" readonly />
+          <div id="pinKeys" class="pin-keys"></div>
+          <div class="pin-actions">
+            <button id="pinClear" class="btn btn-sm" type="button">Стереть</button>
+            <button id="pinSubmit" class="btn btn-sm" type="button">Войти</button>
+          </div>
+        </div>
+        <div class="pin-hint">PIN 8931 → <b>Alchemist</b> · PIN 2401 → <b>Ardente Stella</b></div>
+        <div id="pinError" class="pin-hint" style="color:var(--danger); display:none;">Неверный PIN</div>
       </div>
-      <div class="pin-hint">PIN 8931 → <b>Alchemist</b> · PIN 2401 → <b>Ardente Stella</b></div>
-      <div id="pinError" class="pin-hint" style="color:var(--danger); display:none;">Неверный PIN</div>
-    </div>
   </div>
 
   <!-- ===== Приложение ===== -->
@@ -485,9 +497,10 @@
 
     // ================== ПРИВЯЗКА СОБЫТИЙ ==================
     window.addEventListener('DOMContentLoaded', ()=>{
-      // //PIN
+    // //PIN
       document.getElementById('pinSubmit').addEventListener('click', unlockByPin);
-      document.getElementById('pin').addEventListener('keydown', (e)=> { if(e.key === 'Enter') unlockByPin(); });
+      document.getElementById('pinClear').addEventListener('click', ()=>{ document.getElementById('pin').value=''; });
+      initPinPad();
 
       // //табы
       document.getElementById('tab-exp').addEventListener('click', ()=> setPage('exp'));
@@ -515,7 +528,22 @@
 
       // //автозагрузка данных (без кнопки, по умолчанию)
       loadAllData();
-    });
+      });
+
+      function initPinPad(){
+        const keys = document.getElementById('pinKeys');
+        for(let i=1;i<=10;i++){
+          const n = i % 10;
+          const btn = document.createElement('div');
+          btn.className = 'pin-key';
+          btn.textContent = n;
+          btn.addEventListener('click', ()=>{
+            const inp = document.getElementById('pin');
+            if(inp.value.length < 4) inp.value += n;
+          });
+          keys.appendChild(btn);
+        }
+      }
 
     // //функция: разблокировка по PIN (после этого виден UI)
     function unlockByPin(){
