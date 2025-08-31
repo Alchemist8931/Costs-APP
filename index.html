@@ -272,7 +272,7 @@
         </div>
         <div>
           <label>Дата</label>
-          <input id="inpDate" class="field" type="date"/>
+          <input id="inpDate" class="field" type="datetime-local"/>
         </div>
         <div>
           <label>Сумма</label>
@@ -323,12 +323,26 @@
       const digits = (s+"").replace(/[^\d]/g,"");
       return digits ? Number(digits) : NaN;
     }
-    // //функция: сегодняшняя дата yyyy-mm-dd
-    function todayISO(){
+    // //функция: текущие дата и время YYYY-MM-DDTHH:MM
+    function nowLocalISO(){
       const d = new Date();
       const mm = String(d.getMonth()+1).padStart(2,"0");
       const dd = String(d.getDate()).padStart(2,"0");
-      return `${d.getFullYear()}-${mm}-${dd}`;
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mi = String(d.getMinutes()).padStart(2,"0");
+      return `${d.getFullYear()}-${mm}-${dd}T${hh}:${mi}`;
+    }
+    function fmtDateTime(iso){
+      if(!iso) return "";
+      const d = new Date(iso);
+      if(isNaN(d)) return iso;
+      const dateStr = d.toLocaleDateString('ru-RU', {
+        day: 'numeric', month: 'long', year: 'numeric'
+      });
+      const timeStr = d.toLocaleTimeString('ru-RU', {
+        hour: '2-digit', minute: '2-digit', hour12: false
+      });
+      return `${dateStr} (${timeStr})`;
     }
     // //функция: прокрутка к началу
     function scrollTop(el){ try{ el.scrollTo({top:0, behavior:"smooth"}); }catch{} }
@@ -406,7 +420,7 @@
           <input class="field" value="${user}" readonly title="Пользователь"/>
           <input class="field" value="${source}" readonly title="Источник"/>
           <input class="field" value="${category}" readonly title="Категория"/>
-          <input class="field col-date" value="${date}" readonly title="Дата"/>
+          <input class="field col-date" value="${fmtDateTime(date)}" readonly title="Дата"/>
           <input class="field col-amount" value="${fmtAmount(amount)}" readonly title="Сумма"/>
         `;
         listEl.appendChild(row);
@@ -433,7 +447,7 @@
       createMode = kind;
       document.getElementById('modalTitle').textContent = (kind === "exp") ? "Создание расходной операции" : "Создание доходной операции";
       document.getElementById('formErr').style.display = 'none';
-      document.getElementById('inpDate').value = todayISO();
+      document.getElementById('inpDate').value = nowLocalISO();
       document.getElementById('inpSource').value = "";
       document.getElementById('inpCategory').value = "";
       document.getElementById('inpAmount').value = "";
