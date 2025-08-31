@@ -67,23 +67,42 @@
     .lock-sub{ color: var(--muted); margin: 0 0 18px 0; font-size: 14px; }
      .pin-pad{ text-align:center; }
     .pin-input{
-      width:100%; height: var(--input-h); border-radius: 10px; border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06); color: var(--text); padding: 0 14px; font-size: 16px; outline: none;
+      width:100%;
+      height: calc(var(--input-h)*2);
+      border-radius:10px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: var(--text);
+      padding:0 14px;
+      font-size:32px;
+      outline:none;
       margin-bottom:18px;
     }
-    .pin-keys{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+    .pin-input.error{ animation:shake 0.3s; }
+    @keyframes shake{
+      0%,100%{ transform:translateX(0); }
+      25%{ transform:translateX(-8px); }
+      75%{ transform:translateX(8px); }
+    }
+    .pin-keys{
+      display:grid;
+      grid-template-columns: repeat(3,1fr);
+      gap:12px;
+      justify-items:center;
+    }
     .pin-key{
-      width:46px; height:46px; line-height:46px; border-radius:50%; border:1px solid var(--border);
-      color: var(--text); cursor:pointer; user-select:none; transition:.3s;
+      width: calc(var(--input-h)*2);
+      height: calc(var(--input-h)*2);
+      line-height: calc(var(--input-h)*2);
+      border-radius:50%;
+      border:1px solid var(--border);
+      color: var(--text);
+      cursor:pointer;
+      user-select:none;
+      transition:.3s;
+      font-size:24px;
     }
     .pin-key:hover{ background: rgba(255,255,255,0.08); }
-    .pin-actions{ margin-top:16px; display:flex; gap:10px; justify-content:center; }
-    .btn-sm{ height:var(--input-h); padding:0 14px; }
-    .btn{
-      height: var(--input-h); padding: 0 16px; border: 1px solid var(--border);
-      border-radius: 12px; background: linear-gradient(180deg, rgba(90,209,255,0.25), rgba(90,209,255,0.1));
-      color: var(--text); font-weight: 600; cursor: pointer;
-    }
     .pin-hint{ margin-top: 10px; color: var(--muted); font-size: 12px; }
 
     /* ===== Каркас приложения ===== */
@@ -193,13 +212,8 @@
         <div class="pin-pad">
           <input id="pin" class="pin-input" type="password" maxlength="4" readonly />
           <div id="pinKeys" class="pin-keys"></div>
-          <div class="pin-actions">
-            <button id="pinClear" class="btn btn-sm" type="button">Стереть</button>
-            <button id="pinSubmit" class="btn btn-sm" type="button">Войти</button>
           </div>
-        </div>
-        <div class="pin-hint">PIN 8931 → <b>Alchemist</b> · PIN 2401 → <b>Ardente Stella</b></div>
-        <div id="pinError" class="pin-hint" style="color:var(--danger); display:none;">Неверный PIN</div>
+          <div id="pinError" class="pin-hint" style="color:var(--danger); display:none;">Неверный PIN</div>
       </div>
   </div>
 
@@ -498,9 +512,6 @@
     // ================== ПРИВЯЗКА СОБЫТИЙ ==================
     window.addEventListener('DOMContentLoaded', ()=>{
     // //PIN
-      document.getElementById('pinSubmit').addEventListener('click', unlockByPin);
-      document.getElementById('pinClear').addEventListener('click', ()=>{ document.getElementById('pin').value=''; });
-      initPinPad();
 
       // //табы
       document.getElementById('tab-exp').addEventListener('click', ()=> setPage('exp'));
@@ -532,26 +543,39 @@
 
       function initPinPad(){
         const keys = document.getElementById('pinKeys');
-        for(let i=1;i<=10;i++){
-          const n = i % 10;
+        for(let i=1; i<=9; i++){
+          keys.appendChild(createKey(i));
+        }
+        const zeroKey = createKey(0);
+        zeroKey.style.gridColumn = '2';
+        keys.appendChild(zeroKey);
+
+        function createKey(n){
           const btn = document.createElement('div');
           btn.className = 'pin-key';
           btn.textContent = n;
           btn.addEventListener('click', ()=>{
             const inp = document.getElementById('pin');
-            if(inp.value.length < 4) inp.value += n;
+            if (inp.value.length < 4){
+              inp.value += n;
+              if (inp.value.length === 4) unlockByPin();
+            }
           });
-          keys.appendChild(btn);
+          return btn;
         }
       }
 
     // //функция: разблокировка по PIN (после этого виден UI)
     function unlockByPin(){
-      const pin = document.getElementById('pin').value.trim();
+      const inp = document.getElementById('pin');
+      const pin = inp.value.trim();
       const user = PIN_MAP[pin];
       const err = document.getElementById('pinError');
       if(!user){
         err.style.display = 'block';
+        inp.value = '';
+        inp.classList.add('error');
+        setTimeout(()=> inp.classList.remove('error'), 300);
         setTimeout(()=> err.style.display='none', 1600);
         return;
       }
