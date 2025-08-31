@@ -229,7 +229,7 @@
         <div class="tab active" id="tab-exp">EXPENSE</div>
         <div class="tab" id="tab-inc">INCOME</div>
         <div style="flex:1"></div>
-        <div style="color:var(--muted); font-size:13px;">status: <b id="statusText">…</b></div>
+        <div style="color:var(--muted); font-size:13px;"> <b id="statusText">…</b></div>
       </div>
 
       <div class="pages" id="pages">
@@ -379,10 +379,10 @@
         renderList('exp', exp);
         renderList('inc', inc);
         rebuildDatalists();
-        setStatus('Готово');
+        setStatus('base connect');
       }catch(e){
         console.error(e);
-        setStatus('Ошибка');
+        setStatus('base ERROR');
       }
     }
 
